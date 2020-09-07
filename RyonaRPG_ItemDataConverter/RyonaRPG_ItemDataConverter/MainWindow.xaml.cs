@@ -31,6 +31,10 @@ namespace RyonaRPG_ItemDataConverter
         {
             InitializeComponent();
             textBox_SystemPicture.Text = System.IO.Path.Combine(System.Environment.CurrentDirectory, @"システムB.png");
+
+#if DEBUG
+            button_outputCSV.Visibility = Visibility.Visible;
+#endif
         }
 
         private void button_output_Click(object sender, RoutedEventArgs e)
