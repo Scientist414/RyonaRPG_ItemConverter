@@ -120,7 +120,8 @@ namespace RyonaRPG_ItemDataConverter
                 {"依頼", 3},
                 {"大事", 4},
                 {"ﾋﾟｱｽ", 5},
-                {"他", 6}
+                {"他", 6},
+                {"鍛冶", 7}
             };
             DicTypeSubTypeColection.Add((int)TypeEnum.Normal, dic);
 

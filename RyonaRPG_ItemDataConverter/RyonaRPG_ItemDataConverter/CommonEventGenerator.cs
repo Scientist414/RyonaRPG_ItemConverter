@@ -7,6 +7,7 @@ using System.Xml;
 using System.IO;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace RyonaRPG_ItemDataConverter
 {
@@ -15,11 +16,11 @@ namespace RyonaRPG_ItemDataConverter
         /// <summary> ラベルの配置間隔</summary>
         const int LabelSpan = 50;
         /// <summary> 開始コモン番号</summary>
-        const int CommonNumberStart = 1301;
+        public const int CommonNumberStart = 2001;
         /// <summary> アイテム番号毎コモン区切り</summary>
         const int CommonSplit = 100;
         /// <summary> アイテム番号毎コモン区切り　アイテム情報の取得用　負荷軽減のためより細かく分割しています</summary>
-        const int CommonSplitItemInfo = 50;
+        const int CommonSplitItemQuantity = 50;
         /// <summary>コモン「データ取得」 (ピクチャメニュー表示中は使えないため使用断念)</summary>
         const int CommonGetPlayerStatus = 56;
         /// <summary>コモン「HPMP計算」</summary>
@@ -30,6 +31,8 @@ namespace RyonaRPG_ItemDataConverter
         /// <summary> アイテム番号MAX値（最大5000）</summary>
         const int ItemNumMax = 5000;
 
+        /// <summary>主人公番号格納変数番号</summary>
+        const int ValuePlayerNum = 6;
         /// <summary> アイテム番号格納変数番号</summary>
         const int ValueItemNum = 191;
         /// <summary> 「所持数」格納先変数番号</summary>
@@ -61,8 +64,19 @@ namespace RyonaRPG_ItemDataConverter
         /// <summary> 「汎用2」変数</summary>
         const int ValueGeneral2 = 2;
 
+        /// <summary> 種別_サブ種別変数</summary>
+        const int ValueItemType = 1656;
+        /// <summary> 装備品性能変数</summary>
+        const int ValueItemATK = 1657;
+        const int ValueItemDEF = 1658;
+        const int ValueItemMAT = 1659;
+        const int ValueItemMDF = 1660;
+
         /// <summary> メニュー強制終了スイッチ</summary>
         const int SwitchMenuInterrupt = 1565;
+
+        /// <summary> 「ｱｲﾃﾑ-装備不可」スイッチ</summary>
+        const int SwitchEquipPermission = 1573;
 
         /// <summary> 状態異常</summary>
         const int SwitchDebuffPoison = 101;
@@ -94,7 +108,7 @@ namespace RyonaRPG_ItemDataConverter
             CreateDrawDescCommons(ref dicCommonEvents, itemDatas);
 
             // 所持数取得用コモンの作成
-            CreateGetItemInfoCommons(ref dicCommonEvents, itemDatas);
+            CreateGetItemQuantityCommons(ref dicCommonEvents, itemDatas);
 
             // index検索用コモンの作成
             CreateSearchFilterCommons(ref dicCommonEvents, itemDatas);
@@ -104,6 +118,9 @@ namespace RyonaRPG_ItemDataConverter
 
             // アイテム名取得コモンの作成
             CreateGetItemNameCommon(ref dicCommonEvents, itemDatas);
+
+            // アイテム情報取得コモンの作成
+            CreateGetItemInfoCommons(ref dicCommonEvents, itemDatas);
 
             // 空いているIDの領域を空白コモンで埋めます
             int keyMin = 5000;
@@ -350,7 +367,7 @@ namespace RyonaRPG_ItemDataConverter
             Encoding sjisEnc = Encoding.GetEncoding("Shift_JIS");
 
             // 生成対象のピクチャー番号 増やすと重くなります
-            List<int> pictureNum = new List<int>() { 63 };
+            List<int> pictureNum = new List<int>() { 75 };
 
             string NL = Environment.NewLine;
             // 2重リスト
@@ -490,11 +507,11 @@ namespace RyonaRPG_ItemDataConverter
         }
 
         /// <summary>
-        /// アイテム情報の取得用コモンを作成します
+        /// アイテム所持数の取得用コモンを作成します
         /// </summary>
         /// <param name="dicCommonEvents"></param>
         /// <param name="itemDatas"></param>
-        private static void CreateGetItemInfoCommons(ref Dictionary<int, List<byte>> dicCommonEvents, List<ItemData> itemDatas)
+        private static void CreateGetItemQuantityCommons(ref Dictionary<int, List<byte>> dicCommonEvents, List<ItemData> itemDatas)
         {
             // 呼び出し用コモンの格納先
             int triggerCommonNumber = CommonNumberStart + 2;
@@ -508,13 +525,13 @@ namespace RyonaRPG_ItemDataConverter
             // 開始位置に呼び出し用のコモンを配置 
             int cnt = 0;
             List<byte> events = new List<byte>();
-            for (int i = 0; i < ItemNumMax; i += CommonSplitItemInfo)
+            for (int i = 0; i < ItemNumMax; i += CommonSplitItemQuantity)
             {
                 // 条件分岐
                 events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
                 events.AddRange(Common.IntToBerList(ValueItemNum));
                 events.AddRange(new List<byte> { 0x00 });
-                events.AddRange(Common.IntToBerList(i + CommonSplitItemInfo));
+                events.AddRange(Common.IntToBerList(i + CommonSplitItemQuantity));
                 events.AddRange(new List<byte> { 0x02, 0x00 });
 
                 // イベントの呼び出し
@@ -536,17 +553,17 @@ namespace RyonaRPG_ItemDataConverter
             // 注釈メッセージの挿入
             InsertEditCaptionMessage(ref events);
             // コモンイベント情報の結合
-            List<byte> d = MergeCommonHeader(triggerCommonNumber.ToString() + "ｱｲﾃﾑ情報取得", events);
+            List<byte> d = MergeCommonHeader(triggerCommonNumber.ToString() + "ｱｲﾃﾑ所持数取得", events);
             dicCommonEvents.Add(triggerCommonNumber, d);
 
 
             // CommonSplit区切りでファイル生成
             // 実際の取得処理
             int commonNum = processCommonNumber;
-            for (int cs = 0; cs < ItemNumMax; cs += CommonSplitItemInfo)
+            for (int cs = 0; cs < ItemNumMax; cs += CommonSplitItemQuantity)
             {
                 events = new List<byte>();
-                int cs_max = cs + CommonSplitItemInfo;
+                int cs_max = cs + CommonSplitItemQuantity;
                 if (cs < itemDatas.Count)
                 {
                     if (cs_max > itemDatas.Count) cs_max = itemDatas.Count;
@@ -604,13 +621,13 @@ namespace RyonaRPG_ItemDataConverter
                         events.AddRange(Common.IntToBerList(i + 1));
                         events.AddRange(new List<byte> { 0x00 });
 
-                        // 値段取得
+                        // 装備数加算
                         events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
-                        events.AddRange(Common.IntToBerList(ValuePrice));
-                        events.AddRange(Common.IntToBerList(ValuePrice));
-                        events.AddRange(new List<byte> { 0x00, 0x00 });
-                        events.AddRange(Common.IntToBerList(data.Price));
-                        events.AddRange(new List<byte> { 0x00 });
+                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                        events.AddRange(new List<byte> { 0x01, 0x04 });
+                        events.AddRange(Common.IntToBerList(i + 1));
+                        events.AddRange(new List<byte> { 0x01 });
 
                         // exit
                         events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
@@ -626,8 +643,8 @@ namespace RyonaRPG_ItemDataConverter
                 // 注釈メッセージの挿入
                 InsertEditCaptionMessage(ref events);
                 // コモンイベント情報の結合
-                cs_max = cs + CommonSplitItemInfo;
-                List<byte> d2 = MergeCommonHeader(commonNum.ToString() + "ｱｲﾃﾑ情報取得" + (cs + 1).ToString() + "~" + cs_max.ToString(), events);
+                cs_max = cs + CommonSplitItemQuantity;
+                List<byte> d2 = MergeCommonHeader(commonNum.ToString() + "ｱｲﾃﾑ所持数取得" + (cs + 1).ToString() + "~" + cs_max.ToString(), events);
                 dicCommonEvents.Add(commonNum, d2);
 
                 commonNum++;
@@ -891,12 +908,51 @@ namespace RyonaRPG_ItemDataConverter
                     }
                     else
                     {
+                        int label = 1;
                         // サブ種別ワイルドカード検索
+                        // 負荷軽減のためにLabelSpan区切りでラベルを設定し飛ぶ処理を作成
+                        label = 1;
+                        index = 0;
                         for (int j = 0; j < itemDatas.Count; j++)
                         {
                             ItemData data = itemDatas[j];
                             if (data.Type == FilterType && data.Name != "")
                             {
+                                if (index % LabelSpan == 0)
+                                {
+                                    // 条件分岐
+                                    events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                                    events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                                    events.AddRange(new List<byte> { 0x00 });
+                                    events.AddRange(Common.IntToBerList(label * LabelSpan));
+                                    events.AddRange(new List<byte> { 0x04, 0x00 });
+                                    // 指定ラベルへ飛ぶ
+                                    events.AddRange(new List<byte> { 0xDE, 0x58, 0x01, 0x00, 0x01 });
+                                    events.AddRange(Common.IntToBerList(label));
+                                    // 条件分岐の終わり側
+                                    events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+
+                                    label++;
+                                }
+                                index++;
+                            }
+                        }
+
+                        label = 1;
+                        index = 0;
+                        for (int j = 0; j < itemDatas.Count; j++)
+                        {
+                            ItemData data = itemDatas[j];
+                            if (data.Type == FilterType && data.Name != "")
+                            {
+                                // 50毎にLabelを設定
+                                if (index % LabelSpan == 0)
+                                {
+                                    events.AddRange(new List<byte> { 0xDE, 0x4E, 0x00, 0x00, 0x01 });
+                                    events.AddRange(Common.IntToBerList(label));
+                                    label++;
+                                }
+
                                 // アイテム番号
                                 // 条件分岐
                                 events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
@@ -1720,7 +1776,6 @@ namespace RyonaRPG_ItemDataConverter
             }
         }
 
-
         /// <summary>
         /// アイテム名取得コモンを作成します
         /// </summary>
@@ -1798,6 +1853,219 @@ namespace RyonaRPG_ItemDataConverter
             dicCommonEvents.Add(triggerCommonNumber, d2);
         }
 
+        /// <summary>
+        /// アイテム情報の取得用コモンを作成します
+        /// </summary>
+        /// <param name="dicCommonEvents"></param>
+        /// <param name="itemDatas"></param>
+        private static void CreateGetItemInfoCommons(ref Dictionary<int, List<byte>> dicCommonEvents, List<ItemData> itemDatas)
+        {
+            // 呼び出し用コモンの格納先
+            int triggerCommonNumber = CommonNumberStart + 7;
+            // 内部処理コモンの格納先
+            int processCommonNumber = CommonNumberStart + 400;
+
+            // 文字バイト数取得用
+            Encoding sjisEnc = Encoding.GetEncoding("Shift_JIS");
+
+            // 負荷軽減のためCommonSplitの番号毎に別コモン化します
+            // 開始位置に呼び出し用のコモンを配置 
+            int cnt = 0;
+            List<byte> events = new List<byte>();
+            for (int i = 0; i < ItemNumMax; i += CommonSplit)
+            {
+                // 条件分岐
+                events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                events.AddRange(Common.IntToBerList(ValueItemNum));
+                events.AddRange(new List<byte> { 0x00 });
+                events.AddRange(Common.IntToBerList(i + CommonSplit));
+                events.AddRange(new List<byte> { 0x02, 0x00 });
+
+                // イベントの呼び出し
+                events.AddRange(new List<byte> { 0xE0, 0x2A, 0x01, 0x00, 0x03, 0x00 }); // 3byte目がインデントなので注意
+                events.AddRange(Common.IntToBerList(processCommonNumber + cnt));
+                events.AddRange(new List<byte> { 0x00 });
+
+                // exit
+                events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 }); // 3byte目がインデントなので注意
+
+                // 条件分岐の終わり側？
+                events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+
+                cnt++;
+            }
+            // 終了
+            events.AddRange(new List<byte> { 0x00, 0x00, 0x00, 0x00 });
+
+            // 注釈メッセージの挿入
+            InsertEditCaptionMessage(ref events);
+            // コモンイベント情報の結合
+            List<byte> d = MergeCommonHeader(triggerCommonNumber.ToString() + "ｱｲﾃﾑ情報取得", events);
+            dicCommonEvents.Add(triggerCommonNumber, d);
+
+
+            // CommonSplit区切りでファイル生成
+            // 実際の取得処理
+            int commonNum = processCommonNumber;
+            for (int cs = 0; cs < ItemNumMax; cs += CommonSplit)
+            {
+                events = new List<byte>();
+                int cs_max = cs + CommonSplit;
+                if (cs < itemDatas.Count)
+                {
+                    if (cs_max > itemDatas.Count) cs_max = itemDatas.Count;
+                    // 負荷軽減のためにLabelSpan区切りでラベルを設定し飛ぶ処理を作成
+                    // アイテム情報取得処理をアイテム50毎に変更したため、ラベル関連処理を削除
+                    int label = 1;
+                    for (int i = cs; i < cs_max; i += LabelSpan)
+                    {
+                        // 条件分岐
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(new List<byte> { 0x00 });
+                        events.AddRange(Common.IntToBerList(i + LabelSpan));
+                        events.AddRange(new List<byte> { 0x02, 0x00 });
+                        // 指定ラベルへ飛ぶ
+                        events.AddRange(new List<byte> { 0xDE, 0x58, 0x01, 0x00, 0x01 });
+                        events.AddRange(Common.IntToBerList(label));
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+
+                        label++;
+                    }
+
+                    // 取得処理部分
+                    label = 1;
+                    for (int i = cs; i < cs_max; i++)
+                    {
+                        ItemData data = itemDatas[i];
+
+                        // 50毎にLabelを設定
+                        if (i % LabelSpan == 0)
+                        {
+                            events.AddRange(new List<byte> { 0xDE, 0x4E, 0x00, 0x00, 0x01 });
+                            events.AddRange(Common.IntToBerList(label));
+                            label++;
+                        }
+
+                        // アイテム番号
+                        // 条件分岐
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(new List<byte> { 0x00 });
+                        events.AddRange(Common.IntToBerList(i + 1));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+
+                        // 値段取得
+                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                        events.AddRange(Common.IntToBerList(ValuePrice));
+                        events.AddRange(Common.IntToBerList(ValuePrice));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+                        events.AddRange(Common.IntToBerList(data.Price));
+                        events.AddRange(new List<byte> { 0x00 });
+
+                        // 種別取得
+                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                        events.AddRange(Common.IntToBerList(ValueItemType));
+                        events.AddRange(Common.IntToBerList(ValueItemType));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+                        events.AddRange(Common.IntToBerList(data.SearchFilter));
+                        events.AddRange(new List<byte> { 0x00 });
+
+                        // 装備不可スイッチをOFFに
+                        events.AddRange(new List<byte> { 0xCF, 0x62, 0x01, 0x00, 0x04, 0x00 });
+                        events.AddRange(Common.IntToBerList(SwitchEquipPermission));
+                        events.AddRange(Common.IntToBerList(SwitchEquipPermission));
+                        events.AddRange(new List<byte> { 0x01 });
+
+                        // 装備性能取得
+                        if (data.Type == (int)ItemData.TypeEnum.Weapon
+                            || data.Type == (int)ItemData.TypeEnum.Shield
+                            || data.Type == (int)ItemData.TypeEnum.Armor
+                            || data.Type == (int)ItemData.TypeEnum.Helmet
+                            || data.Type == (int)ItemData.TypeEnum.Accessory)
+                        {
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueItemATK));
+                            events.AddRange(Common.IntToBerList(ValueItemATK));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(Common.IntToBerList(data.ATK));
+                            events.AddRange(new List<byte> { 0x00 });
+
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueItemDEF));
+                            events.AddRange(Common.IntToBerList(ValueItemDEF));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(Common.IntToBerList(data.DEF));
+                            events.AddRange(new List<byte> { 0x00 });
+
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueItemMAT));
+                            events.AddRange(Common.IntToBerList(ValueItemMAT));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(Common.IntToBerList(data.MAT));
+                            events.AddRange(new List<byte> { 0x00 });
+
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueItemMDF));
+                            events.AddRange(Common.IntToBerList(ValueItemMDF));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(Common.IntToBerList(data.MDF));
+                            events.AddRange(new List<byte> { 0x00 });
+
+                            // 装備許可スイッチの設定
+                            for (int j = 0; j < data.EquipPermission.Count; j++)
+                            {
+                                // 条件分岐
+                                events.AddRange(new List<byte> { 0xDD, 0x6A, 0x01, 0x00, 0x06, 0x01 });
+                                events.AddRange(Common.IntToBerList(ValuePlayerNum));
+                                events.AddRange(new List<byte> { 0x00 });
+                                events.AddRange(Common.IntToBerList(data.EquipPermission[j]));
+                                events.AddRange(new List<byte> { 0x00, 0x00 });
+
+                                // 装備不可スイッチをOFFに
+                                events.AddRange(new List<byte> { 0xCF, 0x62, 0x02, 0x00, 0x04, 0x00 });
+                                events.AddRange(Common.IntToBerList(SwitchEquipPermission));
+                                events.AddRange(Common.IntToBerList(SwitchEquipPermission));
+                                events.AddRange(new List<byte> { 0x00 });
+
+                                // exit
+                                events.AddRange(new List<byte> { 0xE0, 0x16, 0x02, 0x00, 0x00 });
+
+                                // 条件分岐の終わり側
+                                events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x01, 0x00, 0x00 });
+                            }
+                        }
+                        else
+                        {
+                            // 装備以外の場合はまとめて0にする
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x01 });
+                            events.AddRange(new List<byte> { 0x8C, 0x79 });
+                            events.AddRange(new List<byte> { 0x8C, 0x7C });
+                            events.AddRange(new List<byte> { 0x00, 0x00, 0x00, 0x00 });
+                        }
+
+                        // exit
+                        events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+                    }
+                }
+
+                // 終了
+                events.AddRange(new List<byte> { 0x00, 0x00, 0x00, 0x00 });
+
+                // 注釈メッセージの挿入
+                InsertEditCaptionMessage(ref events);
+                // コモンイベント情報の結合
+                cs_max = cs + CommonSplit;
+                List<byte> d2 = MergeCommonHeader(commonNum.ToString() + "ｱｲﾃﾑ情報取得" + (cs + 1).ToString() + "~" + cs_max.ToString(), events);
+                dicCommonEvents.Add(commonNum, d2);
+
+                commonNum++;
+            }
+        }
 
         private static List<byte> CreatePlainCommon(int commonNum)
         {

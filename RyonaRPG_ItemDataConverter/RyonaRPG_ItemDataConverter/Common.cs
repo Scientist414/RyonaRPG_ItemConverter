@@ -40,20 +40,29 @@ namespace RyonaRPG_ItemDataConverter
         {
             List<byte> ret = new List<byte>();
 
+            long v;
+            if (value < 0)
+            {
+                v = 4294967296 + value;
+            }
+            else
+            {
+                v = value;
+            }
             // 128^nで割れる個数を保持します
             int cnt = 1;
-            int temp;
+            long temp;
             while (true)
             {
-                temp = value % (int)Math.Pow(128, cnt);
-                value -= temp;
+                temp = v % (long)Math.Pow(128, cnt);
+                v -= temp;
                 if (cnt != 1)
                 {
-                    temp /= (int)Math.Pow(128, cnt - 1);
+                    temp /= (long)Math.Pow(128, cnt - 1);
                     temp += 128;
                 }
                 ret.Insert(0, Convert.ToByte(temp));
-                if (value == 0) break;
+                if (v == 0) break;
                 cnt++;
             }
 

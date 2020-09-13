@@ -111,7 +111,7 @@ namespace RyonaRPG_ItemDataConverter
                 // TKCodeの生成
                 CommonEventGenerator.CodeToClipboard(ItemDatas);
 
-                System.Windows.MessageBox.Show("コンバートが完了しました\r\nコモンイベント「1301」に貼り付けてください", "情報");
+                System.Windows.MessageBox.Show("コンバートが完了しました\r\nコモンイベント「" + CommonEventGenerator.CommonNumberStart.ToString() + "」に貼り付けてください", "情報");
             }
             catch (Exception ex)
             {
