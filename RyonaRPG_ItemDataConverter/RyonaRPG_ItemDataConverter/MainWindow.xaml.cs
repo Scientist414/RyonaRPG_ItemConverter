@@ -161,7 +161,7 @@ namespace RyonaRPG_ItemDataConverter
                 ClipboardManager.CloseClipboard();
             }
 
-            System.Windows.MessageBox.Show("アイテム画像の出力、コモンイベントの作成を開始します\r\n量が多いと時間が掛かります", "情報");
+            System.Windows.MessageBox.Show("アイテム情報の出力を開始します\r\n量が多いと時間が掛かります", "情報");
 
             ItemDatas = ByteArrayConverter.Convert(byteData);
 
@@ -174,12 +174,38 @@ namespace RyonaRPG_ItemDataConverter
             }
 
             // csv文字列生成
-            string str = "";
+            string str = "番号,名前,種別,攻撃,防御,魔力,精神,性能合計,値段,説明";
             StreamWriter file = new StreamWriter(path, false, Encoding.GetEncoding("Shift_JIS"));
+            file.WriteLine(str);
             for (var i = 0; i < ItemDatas.Count; i++)
             {
                 ItemData data = ItemDatas[i];
-                str = data.Name + ",";
+                str = "";
+                str += data.Number + ",";
+                str += data.Name + ",";
+                string typeName = "";
+                switch(data.Type)
+                {
+                    case 0: typeName = "通常物品"; break;
+                    case 1: typeName = "武器"; break;
+                    case 2: typeName = "盾"; break;
+                    case 3: typeName = "防具"; break;
+                    case 4: typeName = "兜"; break;
+                    case 5: typeName = "装飾"; break;
+                    case 6: typeName = "薬"; break;
+                    case 7: typeName = "本"; break;
+                    case 8: typeName = "種"; break;
+                    case 9: typeName = "特殊"; break;
+                    case 10: typeName = "スイッチ"; break;
+                }
+
+                str += typeName + ",";
+                str += data.ATK.ToString() + ",";
+                str += data.DEF.ToString() + ",";
+                str += data.MAT.ToString() + ",";
+                str += data.MDF.ToString() + ",";
+                str += (data.ATK + data.DEF + data.MAT + data.MDF).ToString() + ",";
+                str += data.Price.ToString() + ",";
                 str += data.Description;
                 file.WriteLine(str);
             }
