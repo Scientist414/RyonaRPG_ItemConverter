@@ -78,6 +78,12 @@ namespace RyonaRPG_ItemDataConverter
         /// <summary> 「ｱｲﾃﾑ-装備不可」スイッチ</summary>
         const int SwitchEquipPermission = 1573;
 
+        /// <summary> 「非所持非表示」スイッチ</summary>
+        const int SwitchHiddenDontHave = 1566;
+
+        /// <summary> 「正方向検索」スイッチ</summary>
+        const int SwitchPosValueSearch = 1571;
+
         /// <summary> 状態異常</summary>
         const int SwitchDebuffPoison = 101;
         const int SwitchDebuffDarkness = 102;
@@ -706,6 +712,7 @@ namespace RyonaRPG_ItemDataConverter
             events.AddRange(Common.IntToBerList(0));
             events.AddRange(new List<byte> { 0x00, 0x00 });
 
+            // アイテム番号の取得
             events.AddRange(new List<byte> { 0xCF, 0x6C, 0x02, 0x00, 0x07, 0x00 });
             events.AddRange(Common.IntToBerList(ValueItemNum));
             events.AddRange(Common.IntToBerList(ValueItemNum));
@@ -713,8 +720,45 @@ namespace RyonaRPG_ItemDataConverter
             events.AddRange(Common.IntToBerList(ValueSearchFilter));
             events.AddRange(new List<byte> { 0x00 });
 
+            // 条件分岐（非所持非表示がOFF）
+            events.AddRange(new List<byte> { 0xDD, 0x6A, 0x02, 0x00, 0x06, 0x00 });
+            events.AddRange(Common.IntToBerList(SwitchHiddenDontHave));
+            events.AddRange(new List<byte> { 0x01, 0x00 });
+            events.AddRange(new List<byte> { 0x00, 0x01 });
+
             // exit
-            events.AddRange(new List<byte> { 0xE0, 0x16, 0x02, 0x00, 0x00 }); // 3byte目がインデントなので注意
+            events.AddRange(new List<byte> { 0xE0, 0x16, 0x03, 0x00, 0x00 }); // 3byte目がインデントなので注意
+
+            // 条件分岐の終わり側
+            events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x02, 0x00, 0x00 });
+
+            // アイテム所持数取得コモンの呼び出し
+            events.AddRange(new List<byte> { 0xE0, 0x2A, 0x03, 0x00, 0x03, 00 });
+            events.AddRange(Common.IntToBerList(CommonNumberStart + 2));
+            events.AddRange(new List<byte> { 0x00 });
+
+            // 条件分岐（所持数が0）
+            events.AddRange(new List<byte> { 0xDD, 0x6A, 0x03, 0x00, 0x06, 0x01 });
+            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+            events.AddRange(new List<byte> { 0x00, 0x00 });
+            events.AddRange(new List<byte> { 0x00, 0x00 });
+
+            // 所持数が0ならアイテム番号は0に
+            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x04, 0x00, 0x07, 0x00 });
+            events.AddRange(Common.IntToBerList(ValueItemNum));
+            events.AddRange(Common.IntToBerList(ValueItemNum));
+            events.AddRange(new List<byte> { 0x00, 0x00 });
+            events.AddRange(Common.IntToBerList(0));
+            events.AddRange(new List<byte> { 0x00 });
+
+            // 条件分岐の終わり側
+            events.AddRange(new List<byte> { 0x0A, 0x04, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x03, 0x00, 0x00 });
+
+            // exit
+            events.AddRange(new List<byte> { 0xE0, 0x16, 0x03, 0x00, 0x00 });
+
+            // 条件分岐の終わり側
+            events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x02, 0x00, 0x00 });
 
             // 条件分岐の終わり側
             events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x01, 0x00, 0x00 });
@@ -863,6 +907,11 @@ namespace RyonaRPG_ItemDataConverter
             {
                 events = new List<byte>();
 
+                int topLabelNum = 100;
+                // 先頭ラベル（負方向検索で使用）
+                events.AddRange(new List<byte> { 0xDE, 0x4E, 0x00, 0x00, 0x01 });
+                events.AddRange(Common.IntToBerList(topLabelNum));
+
                 int filter = filters[i] - 10000;
                 int FilterSubType = filter % 100; // サブ種別のフィルタ値
                 int FilterType = (filter-FilterSubType) / 100; // 種別のフィルタ値
@@ -886,13 +935,14 @@ namespace RyonaRPG_ItemDataConverter
                         events.AddRange(Common.IntToBerList(ValueItemNum));
                         events.AddRange(new List<byte> { 0x01, 0x00, 0x01, 0x00 });
 
-                        // 全アイテム数の限界を超えた時は検索失敗
+                        // 0番目のアイテムを検索しようとした
                         events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
                         events.AddRange(Common.IntToBerList(ValueItemNum));
                         events.AddRange(new List<byte> { 0x00 });
-                        events.AddRange(Common.IntToBerList(itemDatas.Count));
-                        events.AddRange(new List<byte> { 0x03, 0x00 });
+                        events.AddRange(Common.IntToBerList(0));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
 
+                        // アイテム番号を0に
                         events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
                         events.AddRange(Common.IntToBerList(ValueItemNum));
                         events.AddRange(Common.IntToBerList(ValueItemNum));
@@ -900,11 +950,87 @@ namespace RyonaRPG_ItemDataConverter
                         events.AddRange(Common.IntToBerList(0));
                         events.AddRange(new List<byte> { 0x00 });
 
-                        // 条件分岐の終わり側
-                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+                        // exit
+                        events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
+
+                        // 全アイテム数の限界を超えた時は検索失敗
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(new List<byte> { 0x00 });
+                        events.AddRange(Common.IntToBerList(itemDatas.Count));
+                        events.AddRange(new List<byte> { 0x03, 0x00 });
+
+                        // アイテム番号を0に
+                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+                        events.AddRange(Common.IntToBerList(0));
+                        events.AddRange(new List<byte> { 0x00 });
 
                         // exit
-                        events.AddRange(new List<byte> { 0xE0, 0x16, 0x00, 0x00, 0x00 });
+                        events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
+
+                        // 条件分岐（非所持非表示がOFF）
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x00 });
+                        events.AddRange(Common.IntToBerList(SwitchHiddenDontHave));
+                        events.AddRange(new List<byte> { 0x01, 0x00 });
+                        events.AddRange(new List<byte> { 0x00, 0x01 });
+
+                        // exit
+                        events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 }); // 3byte目がインデントなので注意
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x00, 0x00, 0x00 });
+
+                        // アイテム所持数取得コモンの呼び出し
+                        events.AddRange(new List<byte> { 0xE0, 0x2A, 0x01, 0x00, 0x03, 00 });
+                        events.AddRange(Common.IntToBerList(CommonNumberStart + 2));
+                        events.AddRange(new List<byte> { 0x00 });
+
+                        // 条件分岐（所持数が0）
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x01, 0x00, 0x06, 0x01 });
+                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+
+                        // 条件分岐(正方向検索であるか)
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x02, 0x00, 0x06, 0x00 });
+                        events.AddRange(Common.IntToBerList(SwitchPosValueSearch));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+                        events.AddRange(new List<byte> { 0x00, 0x01 });
+
+                        // インデックス加算
+                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x03, 0x00, 0x07, 0x00 });
+                        events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                        events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                        events.AddRange(new List<byte> { 0x01, 0x00 });
+                        events.AddRange(Common.IntToBerList(1));
+                        events.AddRange(new List<byte> { 0x00 });
+
+                        // else
+                        events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x02, 0x00, 0x00 });
+
+                        // インデックス減算
+                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x03, 0x00, 0x07, 0x00 });
+                        events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                        events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                        events.AddRange(new List<byte> { 0x02, 0x00 });
+                        events.AddRange(Common.IntToBerList(1));
+                        events.AddRange(new List<byte> { 0x00 });
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x02, 0x00, 0x00 });
+
+                        // 指定ラベルへ飛ぶ
+                        events.AddRange(new List<byte> { 0xDE, 0x58, 0x02, 0x00, 0x01 });
+                        events.AddRange(Common.IntToBerList(topLabelNum));
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x01, 0x00, 0x00 });
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
                     }
                     else
                     {
@@ -961,8 +1087,14 @@ namespace RyonaRPG_ItemDataConverter
                                 events.AddRange(Common.IntToBerList(index));
                                 events.AddRange(new List<byte> { 0x00, 0x00 });
 
+                                // 条件分岐(非所持非表示スイッチがOFF)
+                                events.AddRange(new List<byte> { 0xDD, 0x6A, 0x01, 0x00, 0x06, 0x00 });
+                                events.AddRange(Common.IntToBerList(SwitchHiddenDontHave));
+                                events.AddRange(new List<byte> { 0x01, 0x00 });
+                                events.AddRange(new List<byte> { 0x00, 0x01 });
+
                                 // 番号取得
-                                events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                                events.AddRange(new List<byte> { 0xCF, 0x6C, 0x02, 0x00, 0x07, 0x00 });
                                 events.AddRange(Common.IntToBerList(ValueItemNum));
                                 events.AddRange(Common.IntToBerList(ValueItemNum));
                                 events.AddRange(new List<byte> { 0x00, 0x00 });
@@ -970,8 +1102,66 @@ namespace RyonaRPG_ItemDataConverter
                                 events.AddRange(new List<byte> { 0x00 });
 
                                 // exit
-                                events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
+                                events.AddRange(new List<byte> { 0xE0, 0x16, 0x02, 0x00, 0x00 });
 
+                                // else
+                                events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x01, 0x00, 0x00 });
+
+                                // 条件分岐(指定番号のアイテムを持っているか)
+                                events.AddRange(new List<byte> { 0xDD, 0x6A, 0x02, 0x00, 0x06, 0x04 });
+                                events.AddRange(Common.IntToBerList(data.Number));
+                                events.AddRange(new List<byte> { 0x00, 0x00 });
+                                events.AddRange(new List<byte> { 0x00, 0x01 });
+
+                                // 番号取得
+                                events.AddRange(new List<byte> { 0xCF, 0x6C, 0x03, 0x00, 0x07, 0x00 });
+                                events.AddRange(Common.IntToBerList(ValueItemNum));
+                                events.AddRange(Common.IntToBerList(ValueItemNum));
+                                events.AddRange(new List<byte> { 0x00, 0x00 });
+                                events.AddRange(Common.IntToBerList(data.Number));
+                                events.AddRange(new List<byte> { 0x00 });
+
+                                // exit
+                                events.AddRange(new List<byte> { 0xE0, 0x16, 0x03, 0x00, 0x00 });
+
+                                // else
+                                events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x02, 0x00, 0x00 });
+
+                                // 条件分岐(正方向検索であるか)
+                                events.AddRange(new List<byte> { 0xDD, 0x6A, 0x03, 0x00, 0x06, 0x00 });
+                                events.AddRange(Common.IntToBerList(SwitchPosValueSearch));
+                                events.AddRange(new List<byte> { 0x00, 0x00 });
+                                events.AddRange(new List<byte> { 0x00, 0x01 });
+
+                                // インデックス加算
+                                events.AddRange(new List<byte> { 0xCF, 0x6C, 0x04, 0x00, 0x07, 0x00 });
+                                events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                                events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                                events.AddRange(new List<byte> { 0x01, 0x00 });
+                                events.AddRange(Common.IntToBerList(1));
+                                events.AddRange(new List<byte> { 0x00 });
+
+                                // else
+                                events.AddRange(new List<byte> { 0x0A, 0x04, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x03, 0x00, 0x00 });
+
+                                // インデックス減算
+                                events.AddRange(new List<byte> { 0xCF, 0x6C, 0x04, 0x00, 0x07, 0x00 });
+                                events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                                events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                                events.AddRange(new List<byte> { 0x02, 0x00 });
+                                events.AddRange(Common.IntToBerList(1));
+                                events.AddRange(new List<byte> { 0x00 });
+
+                                // 指定ラベルへ飛ぶ
+                                events.AddRange(new List<byte> { 0xDE, 0x58, 0x04, 0x00, 0x01 });
+                                events.AddRange(Common.IntToBerList(topLabelNum));
+
+                                // 条件分岐の終わり側
+                                events.AddRange(new List<byte> { 0x0A, 0x04, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x03, 0x00, 0x00 });
+                                // 条件分岐の終わり側
+                                events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x02, 0x00, 0x00 });
+                                // 条件分岐の終わり側
+                                events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x01, 0x00, 0x00 });
                                 // 条件分岐の終わり側
                                 events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
 
@@ -996,8 +1186,14 @@ namespace RyonaRPG_ItemDataConverter
                             events.AddRange(Common.IntToBerList(index));
                             events.AddRange(new List<byte> { 0x00, 0x00 });
 
+                            // 条件分岐(非所持非表示スイッチがOFF)
+                            events.AddRange(new List<byte> { 0xDD, 0x6A, 0x01, 0x00, 0x06, 0x00 });
+                            events.AddRange(Common.IntToBerList(SwitchHiddenDontHave));
+                            events.AddRange(new List<byte> { 0x01, 0x00 });
+                            events.AddRange(new List<byte> { 0x00, 0x01 });
+
                             // 番号取得
-                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x02, 0x00, 0x07, 0x00 });
                             events.AddRange(Common.IntToBerList(ValueItemNum));
                             events.AddRange(Common.IntToBerList(ValueItemNum));
                             events.AddRange(new List<byte> { 0x00, 0x00 });
@@ -1005,8 +1201,66 @@ namespace RyonaRPG_ItemDataConverter
                             events.AddRange(new List<byte> { 0x00 });
 
                             // exit
-                            events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
+                            events.AddRange(new List<byte> { 0xE0, 0x16, 0x02, 0x00, 0x00 });
 
+                            // else
+                            events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x01, 0x00, 0x00 });
+
+                            // 条件分岐(指定番号のアイテムを持っているか)
+                            events.AddRange(new List<byte> { 0xDD, 0x6A, 0x02, 0x00, 0x06, 0x04 });
+                            events.AddRange(Common.IntToBerList(data.Number));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(new List<byte> { 0x00, 0x01 });
+
+                            // 番号取得
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x03, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueItemNum));
+                            events.AddRange(Common.IntToBerList(ValueItemNum));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(Common.IntToBerList(data.Number));
+                            events.AddRange(new List<byte> { 0x00 });
+
+                            // exit
+                            events.AddRange(new List<byte> { 0xE0, 0x16, 0x03, 0x00, 0x00 });
+
+                            // else
+                            events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x02, 0x00, 0x00 });
+
+                            // 条件分岐(正方向検索であるか)
+                            events.AddRange(new List<byte> { 0xDD, 0x6A, 0x03, 0x00, 0x06, 0x00 });
+                            events.AddRange(Common.IntToBerList(SwitchPosValueSearch));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(new List<byte> { 0x00, 0x01 });
+
+                            // インデックス加算
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x04, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                            events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                            events.AddRange(new List<byte> { 0x01, 0x00 });
+                            events.AddRange(Common.IntToBerList(1));
+                            events.AddRange(new List<byte> { 0x00 });
+
+                            // else
+                            events.AddRange(new List<byte> { 0x0A, 0x04, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x03, 0x00, 0x00 });
+
+                            // インデックス減算
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x04, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                            events.AddRange(Common.IntToBerList(ValueSearchIndex));
+                            events.AddRange(new List<byte> { 0x02, 0x00 });
+                            events.AddRange(Common.IntToBerList(1));
+                            events.AddRange(new List<byte> { 0x00 });
+
+                            // 指定ラベルへ飛ぶ
+                            events.AddRange(new List<byte> { 0xDE, 0x58, 0x04, 0x00, 0x01 });
+                            events.AddRange(Common.IntToBerList(topLabelNum));
+
+                            // 条件分岐の終わり側
+                            events.AddRange(new List<byte> { 0x0A, 0x04, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x03, 0x00, 0x00 });
+                            // 条件分岐の終わり側
+                            events.AddRange(new List<byte> { 0x0A, 0x03, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x02, 0x00, 0x00 });
+                            // 条件分岐の終わり側
+                            events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x01, 0x00, 0x00 });
                             // 条件分岐の終わり側
                             events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
 
