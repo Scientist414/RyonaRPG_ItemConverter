@@ -98,6 +98,9 @@ namespace RyonaRPG_ItemDataConverter
         const int SwitchDebuffStun = 111;
         const int SwitchDebuffXXX = 112;
 
+        /// <summary> （装備を外す）アイテムの格納先</summary>
+        const int ItemNumRemoveEquip = 1800;
+
 
         /// <summary> アイテム使用時の音</summary>
         const string SoundItemUse = "神聖5";
@@ -619,21 +622,35 @@ namespace RyonaRPG_ItemDataConverter
                         events.AddRange(Common.IntToBerList(i + 1));
                         events.AddRange(new List<byte> { 0x00, 0x00 });
 
-                        // 所持数取得
-                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
-                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
-                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
-                        events.AddRange(new List<byte> { 0x00, 0x04 });
-                        events.AddRange(Common.IntToBerList(i + 1));
-                        events.AddRange(new List<byte> { 0x00 });
+                        //（装備を外す）を選択した時の専用処理
+                        if (data.Number == ItemNumRemoveEquip)
+                        {
+                            // 所持数取得(1000固定)
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                            events.AddRange(new List<byte> { 0x00, 0x00 });
+                            events.AddRange(Common.IntToBerList(1000));
+                            events.AddRange(new List<byte> { 0x00 });
+                        }
+                        else
+                        {
+                            // 所持数取得
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                            events.AddRange(new List<byte> { 0x00, 0x04 });
+                            events.AddRange(Common.IntToBerList(i + 1));
+                            events.AddRange(new List<byte> { 0x00 });
 
-                        // 装備数加算
-                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
-                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
-                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
-                        events.AddRange(new List<byte> { 0x01, 0x04 });
-                        events.AddRange(Common.IntToBerList(i + 1));
-                        events.AddRange(new List<byte> { 0x01 });
+                            // 装備数加算
+                            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                            events.AddRange(new List<byte> { 0x01, 0x04 });
+                            events.AddRange(Common.IntToBerList(i + 1));
+                            events.AddRange(new List<byte> { 0x01 });
+                        }
 
                         // exit
                         events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
@@ -2237,7 +2254,8 @@ namespace RyonaRPG_ItemDataConverter
                             || data.Type == (int)ItemData.TypeEnum.Shield
                             || data.Type == (int)ItemData.TypeEnum.Armor
                             || data.Type == (int)ItemData.TypeEnum.Helmet
-                            || data.Type == (int)ItemData.TypeEnum.Accessory)
+                            || data.Type == (int)ItemData.TypeEnum.Accessory
+                            || data.Type == (int)ItemData.TypeEnum.Seed)
                         {
                             events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
                             events.AddRange(Common.IntToBerList(ValueItemATK));

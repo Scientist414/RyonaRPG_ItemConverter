@@ -12,3 +12,4 @@ C:\Users\shu41\source\repos\RyonaRPG_ItemDataConverter\RyonaRPG_ItemDataConverte
 C:\Users\shu41\source\repos\RyonaRPG_ItemDataConverter\RyonaRPG_ItemDataConverter\obj\Release\RyonaRPG_ItemDataConverter.csproj.CoreCompileInputs.cache
 C:\Users\shu41\source\repos\RyonaRPG_ItemDataConverter\RyonaRPG_ItemDataConverter\obj\Release\RyonaRPG_ItemDataConverter.exe
 C:\Users\shu41\source\repos\RyonaRPG_ItemDataConverter\RyonaRPG_ItemDataConverter\obj\Release\RyonaRPG_ItemDataConverter.pdb
+C:\Users\shu41\source\repos\RyonaRPG_ItemDataConverter\RyonaRPG_ItemDataConverter\obj\Release\RyonaRPG_ItemDataConverter.csprojAssemblyReference.cache
