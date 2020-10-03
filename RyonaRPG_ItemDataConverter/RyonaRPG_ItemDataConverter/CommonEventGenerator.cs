@@ -534,6 +534,14 @@ namespace RyonaRPG_ItemDataConverter
             // 開始位置に呼び出し用のコモンを配置 
             int cnt = 0;
             List<byte> events = new List<byte>();
+            // 0で初期化
+            events.AddRange(new List<byte> { 0xCF, 0x6C, 0x00, 0x00, 0x07, 0x00 });
+            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+            events.AddRange(Common.IntToBerList(ValueNumberPoss));
+            events.AddRange(new List<byte> { 0x00, 0x00 });
+            events.AddRange(Common.IntToBerList(0));
+            events.AddRange(new List<byte> { 0x00 });
+
             for (int i = 0; i < ItemNumMax; i += CommonSplitItemQuantity)
             {
                 // 条件分岐
@@ -1000,10 +1008,31 @@ namespace RyonaRPG_ItemDataConverter
                         // 条件分岐の終わり側
                         events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x00, 0x00, 0x00 });
 
+                        // （装備をはずす）を検索しようとした 
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x01, 0x00, 0x06, 0x01 });
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(new List<byte> { 0x00 });
+                        events.AddRange(Common.IntToBerList(ItemNumRemoveEquip));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+
+                        // 所持数0扱い
+                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x02, 0x00, 0x07, 0x00 });
+                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                        events.AddRange(Common.IntToBerList(ValueNumberPoss));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+                        events.AddRange(Common.IntToBerList(0));
+                        events.AddRange(new List<byte> { 0x00 });
+
+                        // else
+                        events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7A, 0x01, 0x00, 0x00 });
+
                         // アイテム所持数取得コモンの呼び出し
-                        events.AddRange(new List<byte> { 0xE0, 0x2A, 0x01, 0x00, 0x03, 00 });
+                        events.AddRange(new List<byte> { 0xE0, 0x2A, 0x02, 0x00, 0x03, 00 });
                         events.AddRange(Common.IntToBerList(CommonNumberStart + 2));
                         events.AddRange(new List<byte> { 0x00 });
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x02, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x01, 0x00, 0x00 });
 
                         // 条件分岐（所持数が0）
                         events.AddRange(new List<byte> { 0xDD, 0x6A, 0x01, 0x00, 0x06, 0x01 });

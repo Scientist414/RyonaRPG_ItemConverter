@@ -82,7 +82,7 @@ namespace RyonaRPG_ItemDataConverter
                 Graphics g = Graphics.FromImage(mask);
                 
                 //フォントオブジェクトの作成
-                Font fnt = new Font("ＭＳ ゴシック", 9);
+                Font fnt = new Font("ＭＳ ゴシック", 12, GraphicsUnit.Pixel);
                 //文字列を位置(0,0)、青色で表示
                 //1文字ずつ12pxずつずらして描画する
                 int xp = -2; // 2pxくらいずらして置かないと左に隙間ができます

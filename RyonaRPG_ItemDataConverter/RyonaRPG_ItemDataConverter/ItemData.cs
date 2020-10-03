@@ -241,6 +241,13 @@ namespace RyonaRPG_ItemDataConverter
             DicTypeSubTypeColection.Add((int)TypeEnum.Switch, dic);
         }
 
+        public ItemData(int number, string name)
+        {
+            // ID
+            Number = number;
+            // 名前
+            Name = name;
+        }
         public ItemData(Dictionary<int, byte[]> primalData, int number)
         {
             try

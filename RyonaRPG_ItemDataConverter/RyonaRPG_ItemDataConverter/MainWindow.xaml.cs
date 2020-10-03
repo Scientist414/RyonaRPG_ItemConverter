@@ -25,8 +25,6 @@ namespace RyonaRPG_ItemDataConverter
     /// </summary>
     public partial class MainWindow : Window
     {
-        private List<ItemData> ItemDatas = new List<ItemData>();
-
         public MainWindow()
         {
             InitializeComponent();
@@ -78,7 +76,7 @@ namespace RyonaRPG_ItemDataConverter
 
                 System.Windows.MessageBox.Show("アイテム画像の出力、コモンイベントの作成を開始します\r\n量が多いと時間が掛かります", "情報");
 
-                //byte[] byteData = data.ToArray();
+                List<ItemData> ItemDatas = new List<ItemData>();
                 ItemDatas = ByteArrayConverter.Convert(byteData);
 
                 // フォルダ作成
@@ -163,6 +161,7 @@ namespace RyonaRPG_ItemDataConverter
 
             System.Windows.MessageBox.Show("アイテム情報の出力を開始します\r\n量が多いと時間が掛かります", "情報");
 
+            List<ItemData> ItemDatas = new List<ItemData>();
             ItemDatas = ByteArrayConverter.Convert(byteData);
 
             // フォルダ作成
