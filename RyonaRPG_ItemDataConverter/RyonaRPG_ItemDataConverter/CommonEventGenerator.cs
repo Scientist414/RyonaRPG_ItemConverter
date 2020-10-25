@@ -131,6 +131,9 @@ namespace RyonaRPG_ItemDataConverter
             // アイテム情報取得コモンの作成
             CreateGetItemInfoCommons(ref dicCommonEvents, itemDatas);
 
+            // アイテム種別-サブ種別取得コモンの作成
+            CreateGetItemTypeCommons(ref dicCommonEvents, itemDatas);
+
             // 空いているIDの領域を空白コモンで埋めます
             int keyMin = 5000;
             int keyMax = 0;
@@ -2362,6 +2365,140 @@ namespace RyonaRPG_ItemDataConverter
                 // コモンイベント情報の結合
                 cs_max = cs + CommonSplit;
                 List<byte> d2 = MergeCommonHeader(commonNum.ToString() + "ｱｲﾃﾑ情報取得" + (cs + 1).ToString() + "~" + cs_max.ToString(), events);
+                dicCommonEvents.Add(commonNum, d2);
+
+                commonNum++;
+            }
+        }
+
+        /// <summary>
+        /// アイテム種別-サブ種別の取得用コモンを作成します
+        /// CreateGetItemInfoCommonsを部分的に切り抜いた軽量バージョンです
+        /// </summary>
+        /// <param name="dicCommonEvents"></param>
+        /// <param name="itemDatas"></param>
+        private static void CreateGetItemTypeCommons(ref Dictionary<int, List<byte>> dicCommonEvents, List<ItemData> itemDatas)
+        {
+            // 呼び出し用コモンの格納先
+            int triggerCommonNumber = CommonNumberStart + 8;
+            // 内部処理コモンの格納先
+            int processCommonNumber = CommonNumberStart + 450;
+
+            // 文字バイト数取得用
+            Encoding sjisEnc = Encoding.GetEncoding("Shift_JIS");
+
+            // 負荷軽減のためCommonSplitの番号毎に別コモン化します
+            // 開始位置に呼び出し用のコモンを配置 
+            int cnt = 0;
+            List<byte> events = new List<byte>();
+            for (int i = 0; i < ItemNumMax; i += CommonSplit)
+            {
+                // 条件分岐
+                events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                events.AddRange(Common.IntToBerList(ValueItemNum));
+                events.AddRange(new List<byte> { 0x00 });
+                events.AddRange(Common.IntToBerList(i + CommonSplit));
+                events.AddRange(new List<byte> { 0x02, 0x00 });
+
+                // イベントの呼び出し
+                events.AddRange(new List<byte> { 0xE0, 0x2A, 0x01, 0x00, 0x03, 0x00 }); // 3byte目がインデントなので注意
+                events.AddRange(Common.IntToBerList(processCommonNumber + cnt));
+                events.AddRange(new List<byte> { 0x00 });
+
+                // exit
+                events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 }); // 3byte目がインデントなので注意
+
+                // 条件分岐の終わり側？
+                events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+
+                cnt++;
+            }
+            // 終了
+            events.AddRange(new List<byte> { 0x00, 0x00, 0x00, 0x00 });
+
+            // 注釈メッセージの挿入
+            InsertEditCaptionMessage(ref events);
+            // コモンイベント情報の結合
+            List<byte> d = MergeCommonHeader(triggerCommonNumber.ToString() + "ｱｲﾃﾑ種別取得", events);
+            dicCommonEvents.Add(triggerCommonNumber, d);
+
+
+            // CommonSplit区切りでファイル生成
+            // 実際の取得処理
+            int commonNum = processCommonNumber;
+            for (int cs = 0; cs < ItemNumMax; cs += CommonSplit)
+            {
+                events = new List<byte>();
+                int cs_max = cs + CommonSplit;
+                if (cs < itemDatas.Count)
+                {
+                    if (cs_max > itemDatas.Count) cs_max = itemDatas.Count;
+                    // 負荷軽減のためにLabelSpan区切りでラベルを設定し飛ぶ処理を作成
+                    // アイテム情報取得処理をアイテム50毎に変更したため、ラベル関連処理を削除
+                    int label = 1;
+                    for (int i = cs; i < cs_max; i += LabelSpan)
+                    {
+                        // 条件分岐
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(new List<byte> { 0x00 });
+                        events.AddRange(Common.IntToBerList(i + LabelSpan));
+                        events.AddRange(new List<byte> { 0x02, 0x00 });
+                        // 指定ラベルへ飛ぶ
+                        events.AddRange(new List<byte> { 0xDE, 0x58, 0x01, 0x00, 0x01 });
+                        events.AddRange(Common.IntToBerList(label));
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+
+                        label++;
+                    }
+
+                    // 取得処理部分
+                    label = 1;
+                    for (int i = cs; i < cs_max; i++)
+                    {
+                        ItemData data = itemDatas[i];
+
+                        // 50毎にLabelを設定
+                        if (i % LabelSpan == 0)
+                        {
+                            events.AddRange(new List<byte> { 0xDE, 0x4E, 0x00, 0x00, 0x01 });
+                            events.AddRange(Common.IntToBerList(label));
+                            label++;
+                        }
+
+                        // アイテム番号
+                        // 条件分岐
+                        events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
+                        events.AddRange(Common.IntToBerList(ValueItemNum));
+                        events.AddRange(new List<byte> { 0x00 });
+                        events.AddRange(Common.IntToBerList(i + 1));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+
+                        // 種別取得
+                        events.AddRange(new List<byte> { 0xCF, 0x6C, 0x01, 0x00, 0x07, 0x00 });
+                        events.AddRange(Common.IntToBerList(ValueItemType));
+                        events.AddRange(Common.IntToBerList(ValueItemType));
+                        events.AddRange(new List<byte> { 0x00, 0x00 });
+                        events.AddRange(Common.IntToBerList(data.SearchFilter));
+                        events.AddRange(new List<byte> { 0x00 });
+
+                        // exit
+                        events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+                    }
+                }
+
+                // 終了
+                events.AddRange(new List<byte> { 0x00, 0x00, 0x00, 0x00 });
+
+                // 注釈メッセージの挿入
+                InsertEditCaptionMessage(ref events);
+                // コモンイベント情報の結合
+                cs_max = cs + CommonSplit;
+                List<byte> d2 = MergeCommonHeader(commonNum.ToString() + "ｱｲﾃﾑ種別取得" + (cs + 1).ToString() + "~" + cs_max.ToString(), events);
                 dicCommonEvents.Add(commonNum, d2);
 
                 commonNum++;
