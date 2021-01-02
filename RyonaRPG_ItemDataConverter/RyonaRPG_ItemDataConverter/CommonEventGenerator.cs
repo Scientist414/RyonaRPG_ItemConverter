@@ -981,6 +981,9 @@ namespace RyonaRPG_ItemDataConverter
                         // exit
                         events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
 
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
+
                         // 全アイテム数の限界を超えた時は検索失敗
                         events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x01 });
                         events.AddRange(Common.IntToBerList(ValueItemNum));
@@ -998,6 +1001,9 @@ namespace RyonaRPG_ItemDataConverter
 
                         // exit
                         events.AddRange(new List<byte> { 0xE0, 0x16, 0x01, 0x00, 0x00 });
+
+                        // 条件分岐の終わり側
+                        events.AddRange(new List<byte> { 0x0A, 0x01, 0x00, 0x00, 0x81, 0xAB, 0x7B, 0x00, 0x00, 0x00 });
 
                         // 条件分岐（非所持非表示がOFF）
                         events.AddRange(new List<byte> { 0xDD, 0x6A, 0x00, 0x00, 0x06, 0x00 });

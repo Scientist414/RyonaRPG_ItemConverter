@@ -181,21 +181,21 @@ namespace RyonaRPG_ItemDataConverter
                 ItemData data = ItemDatas[i];
                 str = "";
                 str += data.Number + ",";
-                str += data.Name + ",";
+                str += "\"" + data.Name + "\"" + ",";
                 string typeName = "";
                 switch(data.Type)
                 {
-                    case 0: typeName = "通常物品"; break;
-                    case 1: typeName = "武器"; break;
-                    case 2: typeName = "盾"; break;
-                    case 3: typeName = "防具"; break;
-                    case 4: typeName = "兜"; break;
-                    case 5: typeName = "装飾"; break;
-                    case 6: typeName = "薬"; break;
-                    case 7: typeName = "本"; break;
-                    case 8: typeName = "種"; break;
-                    case 9: typeName = "特殊"; break;
-                    case 10: typeName = "スイッチ"; break;
+                    case 0: typeName = "\"通常物品\""; break;
+                    case 1: typeName = "\"武器\""; break;
+                    case 2: typeName = "\"盾\""; break;
+                    case 3: typeName = "\"防具\""; break;
+                    case 4: typeName = "\"兜\""; break;
+                    case 5: typeName = "\"装飾\""; break;
+                    case 6: typeName = "\"薬\""; break;
+                    case 7: typeName = "\"本\""; break;
+                    case 8: typeName = "\"種\""; break;
+                    case 9: typeName = "\"特殊\""; break;
+                    case 10: typeName = "\"スイッチ\""; break;
                 }
 
                 str += typeName + ",";
@@ -205,7 +205,7 @@ namespace RyonaRPG_ItemDataConverter
                 str += data.MDF.ToString() + ",";
                 str += (data.ATK + data.DEF + data.MAT + data.MDF).ToString() + ",";
                 str += data.Price.ToString() + ",";
-                str += data.Description;
+                str += "\"" + data.Description + "\"";
                 file.WriteLine(str);
             }
             file.Close();
