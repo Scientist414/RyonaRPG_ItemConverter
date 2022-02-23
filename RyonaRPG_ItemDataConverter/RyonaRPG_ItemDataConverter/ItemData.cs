@@ -236,7 +236,8 @@ namespace RyonaRPG_ItemDataConverter
                 {"道具", 1},
                 {"無限", 2},
                 {"壺", 3},
-                {"回復", 4}
+                {"回復", 4},
+                {"ｱﾋﾞﾘﾃｨ", 5}
             };
             DicTypeSubTypeColection.Add((int)TypeEnum.Switch, dic);
         }
