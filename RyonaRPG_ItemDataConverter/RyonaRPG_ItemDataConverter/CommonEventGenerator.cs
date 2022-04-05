@@ -2597,18 +2597,26 @@ namespace RyonaRPG_ItemDataConverter
         {
             try
             {
-                Clipboard.Clear();
+                //Clipboard.Clear();
+                if (!ClipboardManager.OpenClipboard(IntPtr.Zero))
+                {
+                    throw new Exception("クリップボードのオープンに失敗しました" + Environment.NewLine + "やり直してください");
+                }
 
-                ClipboardManager.OpenClipboard(IntPtr.Zero);
+                if (!ClipboardManager.EmptyClipboard())
+                {
+                    throw new Exception("クリップボードへの書き込みに失敗しました" + Environment.NewLine + "やり直してください");
+                }
 
                 byte[] array = b.ToArray();
                 int size = Marshal.SizeOf(array[0]) * array.Length;
                 IntPtr ptr = Marshal.AllocHGlobal(size);
                 Marshal.Copy(array, 0, ptr, size);
 
-                ClipboardManager.SetClipboardData(584, ptr); // コモンイベントなので584
-
-                //Marshal.FreeHGlobal(ptr);
+                if (!ClipboardManager.SetClipboardData(584, ptr))
+                {
+                    throw new Exception("クリップボードへの書き込みに失敗しました" + Environment.NewLine + "やり直してください");
+                }
             }
             catch
             {

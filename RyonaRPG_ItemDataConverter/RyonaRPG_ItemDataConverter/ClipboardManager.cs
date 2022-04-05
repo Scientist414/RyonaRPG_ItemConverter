@@ -21,6 +21,9 @@ namespace RyonaRPG_ItemDataConverter
         internal static extern bool SetClipboardData(uint uFormat, IntPtr data);
 
         [DllImport("user32.dll")]
+        internal static extern bool EmptyClipboard();
+
+        [DllImport("user32.dll")]
         internal static extern IntPtr GetClipboardData(uint uFormat);
 
         [DllImport("Kernel32.dll")]
